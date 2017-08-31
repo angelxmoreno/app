@@ -1,0 +1,62 @@
+version: '2'
+services:
+  web:
+    container_name: "cakephp-skeleton-nginx"
+    image: nginx:1.13-alpine
+    restart: always
+    links:
+     - php
+    ports:
+     - "8281:80"
+    volumes:
+     - ./config/nginx/site.conf:/etc/nginx/conf.d/_site.conf:ro
+    volumes_from:
+     - php
+  php:
+    container_name: "cakephp-skeleton-fpm"
+    image: angelxmoreno/php-fpm-alpine
+    restart: always
+    volumes:
+     - .:/site
+     - ./config/fpm/ini/sessions.ini:/usr/local/etc/php/conf.d/redis_session.ini
+    links:
+     - db
+     - redis
+     - mongo
+     - es
+  db:
+    container_name: "cakephp-skeleton-mysql"
+    image: mariadb:10.1
+    restart: always
+    environment:
+     - MYSQL_ROOT_PASSWORD=cakephp-skeleton
+     - MYSQL_USER=cakephp-skeleton
+     - MYSQL_PASSWORD=cakephp-skeleton
+     - MYSQL_DATABASE=cakephp-skeleton
+    volumes:
+     - ./data/mysql/:/var/lib/mysql
+    ports:
+     - "8282:3306"
+  redis:
+    container_name: "cakephp-skeleton-redis"
+    image: redis:alpine
+    restart: always
+    ports:
+     - "8283:6379"
+  mongo:
+    container_name: "cakephp-skeleton-mongodb"
+    image: mongo:3.0
+    restart: always
+    volumes:
+     - ./data/mongodb/:/data/db
+    ports:
+     - "8284:27017"
+  es:
+    container_name: "cakephp-skeleton-elasticsearch"
+    image: elasticsearch:2.4-alpine
+    restart: always
+    volumes:
+     - ./data/elasticsearch:/usr/share/elasticsearch/data
+    ports:
+     - "8285:9200"
+     - "8286:9300"

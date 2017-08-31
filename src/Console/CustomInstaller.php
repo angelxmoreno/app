@@ -24,6 +24,7 @@ class CustomInstaller extends Installer
         $rootDir = dirname(dirname(__DIR__));
 
         static::createEnvFile($rootDir, $io);
+        static::createDockerComposeFile($rootDir, $io);
         static::createWritableDirectories($rootDir, $io);
         static::askPermissionChange($rootDir, $io);
         $salt = hash('sha256', Security::randomBytes(64));
@@ -31,6 +32,7 @@ class CustomInstaller extends Installer
 
         $appName = Inflector::camelize(basename($rootDir));
         static::setValueInEnv($rootDir, $io, '__APP_NAME__', $appName, 'Application name');
+        static::askContainerShortName($rootDir, $io, $appName);
 
         if (class_exists('\Cake\Codeception\Console\Installer')) {
             \Cake\Codeception\Console\Installer::customizeCodeceptionBinary($event);
@@ -46,8 +48,25 @@ class CustomInstaller extends Installer
      */
     public static function createEnvFile($rootDir, $io)
     {
-        $from = $rootDir . '/.env.default';
+        $from = $rootDir . '/config/.env.default';
         $to = $rootDir . '/.env';
+        if (!file_exists($to)) {
+            copy($from, $to);
+            $io->write('Created `.env` file');
+        }
+    }
+
+    /**
+     * Create the docker-compose file if it does not exist.
+     *
+     * @param string $rootDir The application's root directory.
+     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @return void
+     */
+    public static function createDockerComposeFile($rootDir, $io)
+    {
+        $from = $rootDir . '/config/docker-compose.default';
+        $to = $rootDir . '/docker-compose.yml';
         if (!file_exists($to)) {
             copy($from, $to);
             $io->write('Created `.env` file');
@@ -86,33 +105,38 @@ class CustomInstaller extends Installer
     }
 
     /**
-     * Set the security.salt value in .env
+     * Ask for container short name
      *
      * @param string $rootDir The application's root directory.
      * @param \Composer\IO\IOInterface $io IO interface to write to console.
-     * @param string $newKey key to set in the file
      * @return void
      */
-    public static function setSecuritySaltInEnv($rootDir, $io, $newKey)
+    public static function askContainerShortName($rootDir, $io, $appName)
     {
-        $env_file = $rootDir . '/.env';
-        $content = file_get_contents($env_file);
+        $containerShortName = Inflector::dasherize($appName);
 
-        $content = str_replace('__SALT__', $newKey, $content, $count);
+        $rules = [
+            'Must start with a letter.',
+            'Must be in lower-case'
+        ];
 
-        if ($count == 0) {
-            $io->write('No Security.salt placeholder to replace.');
-
-            return;
+        if ($io->isInteractive()) {
+            $validator = function ($arg) use ($rules) {
+                if (preg_match('/^[a-z][a-z0-9\-\._]*$/', $arg, $matches)) {
+                    return $arg;
+                } else {
+                    throw new Exception('Invalid short-name. ' . implode(" ", $rules));
+                }
+            };
+            $ask = "<info>Short-name for containers ? (Default to {$containerShortName})</info>";
+            $ask .= "<comment>\n";
+            $ask .= implode("\n", $rules);
+            $ask .= "</comment>\n ";
+            $containerShortName = $io->askAndValidate($ask, $validator, 10, $containerShortName);
         }
 
-        $result = file_put_contents($env_file, $content);
-        if ($result) {
-            $io->write('Updated Security.salt value in .env');
-
-            return;
-        }
-        $io->write('Unable to update Security.salt value.');
+        static::setValueInDockerYaml($rootDir, $io, '__CONTAINER_SHORT_NAME__', $containerShortName, 'Container short-name');
+        static::setValueInEnv($rootDir, $io, '__CONTAINER_SHORT_NAME__', $containerShortName, 'Container short-name');
     }
 
     /**
@@ -128,7 +152,38 @@ class CustomInstaller extends Installer
     public static function setValueInEnv($rootDir, $io, $find, $replace, $placeholder_name)
     {
         $env_file = $rootDir . '/.env';
-        $content = file_get_contents($env_file);
+        static::replaceInFile($env_file, $io, $find, $replace, $placeholder_name);
+    }
+
+    /**
+     * Replace a given string with a value for the docker-compose file
+     *
+     * @param string $rootDir The application's root directory.
+     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @param string $find String to find in docker-compose file
+     * @param string $replace String replacing in docker-compose file
+     * @param string $placeholder_name String name of the replacement
+     * @return void
+     */
+    public static function setValueInDockerYaml($rootDir, $io, $find, $replace, $placeholder_name)
+    {
+        $env_file = $rootDir . '/docker-compose.yml';
+        static::replaceInFile($env_file, $io, $find, $replace, $placeholder_name);
+    }
+
+    /**
+     * Replace a given string with a value for the .env file
+     *
+     * @param string $file_path The path of the file to make replacements
+     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @param string $find String to find in file
+     * @param string $replace String to replacing with in file
+     * @param string $placeholder_name String name of the replacement
+     * @return void
+     */
+    public static function replaceInFile($file_path, $io, $find, $replace, $placeholder_name)
+    {
+        $content = file_get_contents($file_path);
 
         $content = str_replace($find, $replace, $content, $count);
 
@@ -138,9 +193,9 @@ class CustomInstaller extends Installer
             return;
         }
 
-        $result = file_put_contents($env_file, $content);
+        $result = file_put_contents($file_path, $content);
         if ($result) {
-            $io->write("Updated {$placeholder_name} value in .env");
+            $io->write("Updated {$placeholder_name} value in {$file_path}");
 
             return;
         }

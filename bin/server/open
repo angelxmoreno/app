@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+PORT=`egrep -o -m 1 '([0-9]*):80' docker-compose.yml | sed 's/:80//'`
+URL="http://localhost:${PORT}"
+echo "Opening '${URL}'"
+open ${URL}

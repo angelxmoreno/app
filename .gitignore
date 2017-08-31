@@ -1,10 +1,16 @@
+.env
+data/mysql/*
+!data/mysql/.gitkeep
+data/mongodb/*
+!data/mongodb/.gitkeep
+data/elasticsearch/*
+!data/elasticsearch/.gitkeep
+
 # CakePHP specific files #
 ##########################
-.env
 /logs/*
 /tmp/*
 /vendor/*
-
 # OS generated files #
 ######################
 .DS_Store
