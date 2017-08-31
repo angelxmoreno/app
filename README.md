@@ -25,7 +25,12 @@ Then visit `http://localhost:8765` to see the welcome page.
 
 There are a few changes from the original skeleton found at [cakephp/app](https://github.com/cakephp/app)
 
-    #. Updated README to denote the usage of Docker
+    1. Updated README to denote the usage of Docker
+    2. Deleted unused directories and files
+        a. .github/
+        b. config/.env.default
+    3. Moved .env.default to root
+    4. Removed files from .gitignore ( config/app is now commitable )
 
 ## Configuration
 
