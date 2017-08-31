@@ -31,6 +31,11 @@ There are a few changes from the original skeleton found at [cakephp/app](https:
         b. config/.env.default
     3. Moved .env.default to root
     4. Removed files from .gitignore ( config/app is now commitable )
+    5. Created App\Console\CustomInstaller to generate:
+        a. .env file if not found
+        b. Security.Salt in .env
+        c. App Name in .env
+    6. Created ENV_FILE constant
 
 ## Configuration
 

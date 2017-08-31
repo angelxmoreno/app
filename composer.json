@@ -36,8 +36,8 @@
         }
     },
     "scripts": {
-        "post-install-cmd": "App\\Console\\Installer::postInstall",
-        "post-create-project-cmd": "App\\Console\\Installer::postInstall",
+        "post-install-cmd": "App\\Console\\CustomInstaller::postInstall",
+        "post-create-project-cmd": "App\\Console\\CustomInstaller::postInstall",
         "post-autoload-dump": "Cake\\Composer\\Installer\\PluginInstaller::postAutoloadDump",
         "check": [
             "@test",
