@@ -1,10 +1,5 @@
 .env
-data/mysql/*
-!data/mysql/.gitkeep
-data/mongodb/*
-!data/mongodb/.gitkeep
-data/elasticsearch/*
-!data/elasticsearch/.gitkeep
+data/*
 
 # CakePHP specific files #
 ##########################

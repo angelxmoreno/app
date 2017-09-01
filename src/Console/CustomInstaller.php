@@ -201,4 +201,76 @@ class CustomInstaller extends Installer
         }
         $io->write("Unable to update {$placeholder_name} value.");
     }
+
+    /**
+     * @inheritdoc
+     */
+    public static function createWritableDirectories($dir, $io)
+    {
+        $paths = [
+            'logs',
+            'tmp',
+            'tmp/cache',
+            'tmp/cache/models',
+            'tmp/cache/persistent',
+            'tmp/cache/views',
+            'tmp/sessions',
+            'tmp/tests',
+            'data',
+            'data/elasticsearch',
+            'data/mongodb',
+            'data/mysql',
+        ];
+
+        foreach ($paths as $path) {
+            $path = $dir . '/' . $path;
+            if (!file_exists($path)) {
+                mkdir($path);
+                $io->write('Created `' . $path . '` directory');
+            }
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function setFolderPermissions($dir, $io)
+    {
+        // Change the permissions on a path and output the results.
+        $changePerms = function ($path, $perms, $io) {
+            // Get permission bits from stat(2) result.
+            $currentPerms = fileperms($path) & 0777;
+            if (($currentPerms & $perms) == $perms) {
+                return;
+            }
+
+            $res = chmod($path, $currentPerms | $perms);
+            if ($res) {
+                $io->write('Permissions set on ' . $path);
+            } else {
+                $io->write('Failed to set permissions on ' . $path);
+            }
+        };
+
+        $walker = function ($dir, $perms, $io) use (&$walker, $changePerms) {
+            $files = array_diff(scandir($dir), ['.', '..']);
+            foreach ($files as $file) {
+                $path = $dir . '/' . $file;
+
+                if (!is_dir($path)) {
+                    continue;
+                }
+
+                $changePerms($path, $perms, $io);
+                $walker($path, $perms, $io);
+            }
+        };
+
+        $worldWritable = bindec('0000000111');
+        $walker($dir . '/tmp', $worldWritable, $io);
+        $walker($dir . '/data', $worldWritable, $io);
+        $changePerms($dir . '/tmp', $worldWritable, $io);
+        $changePerms($dir . '/logs', $worldWritable, $io);
+        $changePerms($dir . '/data', $worldWritable, $io);
+    }
 }
