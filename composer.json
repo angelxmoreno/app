@@ -1,7 +1,7 @@
 {
-    "name": "cakephp/app",
-    "description": "CakePHP skeleton app",
-    "homepage": "https://cakephp.org",
+    "name": "angelxmoreno/docker-compose-cakephp-skeleton",
+    "description": "CakePHP 3.0 application template with Docker Compose file",
+    "homepage": "https://github.com/angelxmoreno/cakephp-skeleton/blob/docker_integration/README.md",
     "type": "project",
     "license": "MIT",
     "require": {
